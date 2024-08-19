@@ -10,19 +10,16 @@ import schedule
 from datetime import datetime
 
 def run_script():
-    # Configuração do WebDriver
     servico = Service(ChromeDriverManager().install())
     navegador = webdriver.Chrome(service=servico)
 
     try:
-        # Abre o site e faz login
         navegador.get('https://sgi.slu.df.gov.br/login')
         navegador.find_element('xpath', '//*[@id="wrapper"]/div[2]/div/div/div/div[2]/div[2]/form/div[1]/div/input').send_keys('SGI_USERNAME')
         navegador.find_element('xpath', '//*[@id="wrapper"]/div[2]/div/div/div/div[2]/div[2]/form/div[2]/div/input').send_keys('SGI_SENHA')
         navegador.find_element('xpath', '//*[@id="wrapper"]/div[2]/div/div/div/div[2]/div[2]/form/div[4]/div[1]/button').click()
         time.sleep(5)
 
-        # Realizar ações de navegação, aplico o filtro desejado e faz o download do arquivo em EXCEL
         navegador.find_element('xpath', '//*[@id="wrapper"]/div[2]/div[2]/div[1]/div/div[3]/div/div/a/button').click()
         time.sleep(5)
         navegador.find_element('xpath', '//*[@id="wrapper"]/div[2]/div[2]/div[2]/div[4]/a/button').click()
@@ -40,10 +37,8 @@ def run_script():
         navegador.find_element('xpath', '//*[@id="wrapper"]/div[2]/div[1]/div/span[2]/button[1]').click()
         time.sleep(15)
 
-        # Fechar o navegador
         navegador.quit()
 
-        # Verifição e manipulação do arquivos recem baixados
         diretorio = 'C:/Users/freit/Downloads'
         arquivos = os.listdir(diretorio)
         arquivos_excel = [arquivo for arquivo in arquivos if arquivo.endswith('.xlsx')]
@@ -53,7 +48,6 @@ def run_script():
             caminho_arquivo = os.path.join(diretorio, arquivo_mais_recente)
             df = pd.read_excel(caminho_arquivo)
 
-            # Renomear as colunas do DataFrame para corresponder as colunas da tabela no banco de dados
             df.rename(columns={
                 'Tíquete': 'tiquete',
                 'Alterado': 'alterado',
@@ -74,17 +68,14 @@ def run_script():
                 'Observação': 'observacao'
             }, inplace=True)
 
-            # Filtrar o DataFrame para incluir apenas linhas com 'Situação' igual a 'finalizado'
             df_finalizado = df[df['situacao'] == 'finalizado']
 
             if not df_finalizado.empty:
-                # Converter colunas de data e data/hora para formato correto
                 df_finalizado['data_entrada'] = pd.to_datetime(df_finalizado['data_entrada'], dayfirst=True).dt.date
                 df_finalizado['data_saida'] = pd.to_datetime(df_finalizado['data_saida'], dayfirst=True).dt.date
                 df_finalizado['hora_entrada'] = pd.to_datetime(df_finalizado['hora_entrada'], dayfirst=True)
                 df_finalizado['hora_saida'] = pd.to_datetime(df_finalizado['hora_saida'], dayfirst=True)
 
-                # Conectar ao banco de dados e inserir novos dados apenas das linhas 'finalizado'
                 endpoint = 'DB_ENDPOINT'
                 port = 'DB_PORTA'
                 name = 'DB_NOME'
@@ -117,7 +108,6 @@ def run_script():
         print(f"Ocorreu um erro: {e}")
         navegador.quit()
 
-# Loop a cada 15 minutos
 schedule.every(15).minutes.do(run_script)
 
 while True:
